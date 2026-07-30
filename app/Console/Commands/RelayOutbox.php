@@ -16,9 +16,19 @@ class RelayOutbox extends Command
 {
     public function handle(): int
     {
+        // The signature always makes --limit optional, so passing it without
+        // a value gives null here instead of the default.
+        $limit = (int) $this->option('limit');
+
+        if ($limit < 1) {
+            $this->error('The --limit option must be a positive number.');
+
+            return self::FAILURE;
+        }
+
         $pending = OutboxEvent::pending()
             ->orderBy('id')
-            ->limit((int) $this->option('limit'))
+            ->limit($limit)
             ->get();
 
         $relayed = 0;

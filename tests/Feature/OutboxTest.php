@@ -95,6 +95,48 @@ test('the relay dispatches events in the order they were published', function ()
     expect($dispatched)->toBe([1, 2, 3]);
 });
 
+test('the relay dispatches no more events than the limit allows', function () {
+    Event::fake();
+
+    foreach ([1, 2, 3] as $orderId) {
+        OutboxEvent::create([
+            'type' => OrderPlaced::class,
+            'payload' => ['order_id' => $orderId, 'reference' => "ORD-{$orderId}"],
+        ]);
+    }
+
+    $this->artisan('outbox:relay', ['--limit' => 2])->assertSuccessful();
+
+    $dispatched = Event::dispatched(OrderPlaced::class)
+        ->map(fn (array $args) => $args[0]->orderId)
+        ->all();
+
+    expect($dispatched)->toBe([1, 2])
+        ->and(OutboxEvent::pending()->count())->toBe(1);
+});
+
+test('the relay refuses a limit that is not a positive number', function (?string $limit) {
+    Event::fake();
+
+    OutboxEvent::create([
+        'type' => OrderPlaced::class,
+        'payload' => ['order_id' => 42, 'reference' => 'ORD-42'],
+    ]);
+
+    $this->artisan('outbox:relay', ['--limit' => $limit])
+        ->expectsOutputToContain('The --limit option must be a positive number.')
+        ->assertFailed();
+
+    Event::assertNotDispatched(OrderPlaced::class);
+
+    expect(OutboxEvent::pending()->count())->toBe(1);
+})->with([
+    'passed without a value' => null,
+    'zero' => '0',
+    'negative' => '-5',
+    'not a number' => 'abc',
+]);
+
 test('the relay leaves already published events alone', function () {
     Event::fake();
 

@@ -1,11 +1,12 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "dudenkoff/laravel-outbox",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Transactional outbox in Laravel: publish domain events reliably, even when the process dies right after commit.",
     "keywords": [
         "laravel",
-        "framework"
+        "outbox",
+        "domain-events"
     ],
     "license": "MIT",
     "require": {
